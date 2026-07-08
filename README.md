@@ -20,6 +20,11 @@
 
 </div>
 
+## What is InfiniBLE?
+InfiniBLE adds a BLE service to InfiniTime for general use. It is intended to help people build custom apps that use BLE. This adds a 16 bit BLE service (currently using the ID 0x181D, which is reserved for weight scales according to the BLE standard.) Included is an app called CarControl, which can be used as an example of how to implement your own app. 
+
+This is my first bluetooth project and it is still very much a work in progress, so keep your expectations in check. I'll update this section as the documentation and capabilities of this project grow.
+
 ## New to InfiniTime?
 
 - [Getting started with InfiniTime](doc/gettingStarted/gettingStarted-1.0.md)
