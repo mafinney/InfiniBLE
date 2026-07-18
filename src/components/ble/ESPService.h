@@ -5,7 +5,7 @@
 #undef max
 #undef min
 
-#define PACKETLEN 2
+#define MAX_PACKET_LEN 4096
 
 namespace Pinetime::System {
     class SystemTask;
@@ -22,9 +22,8 @@ namespace Pinetime::Controllers {
             int ESPServiceCallback(struct ble_gatt_access_ctxt *ctxt);
 
             bool isConnected();
-            void read(int8_t buf[PACKETLEN]);
-            void write(int8_t *buf, int8_t len);
-            int8_t lastValueRead[PACKETLEN];
+            void read(int8_t *buf, uint8_t len);
+            void write(int8_t *buf, uint8_t len);
             bool hasValue = false;
             
         private:
@@ -35,8 +34,8 @@ namespace Pinetime::Controllers {
             // int HandleClientRead(struct ble_gatt_access_ctxt *ctxt);
             int HandleClientWrite(struct ble_gatt_access_ctxt *ctxt);
 
-            int8_t writeBuf[PACKETLEN];
-            int8_t readBuf[PACKETLEN];
+            int8_t writeBuf[MAX_PACKET_LEN];
+            int8_t readBuf[MAX_PACKET_LEN];
 
             static constexpr uint16_t espServiceId {0x181D};
             static constexpr uint16_t espCharId {0x2AFF};

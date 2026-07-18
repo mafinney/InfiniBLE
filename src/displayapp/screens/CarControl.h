@@ -32,7 +32,7 @@ namespace Pinetime::Applications {
 
 			private:
 				Controllers::ESPService& esp;
-				int8_t buf[PACKETLEN];
+				int8_t buf[MAX_PACKET_LEN];
 
 				static constexpr uint8_t MEDIUM_BUTTON_W = 115;
             	static constexpr uint8_t MEDIUM_BUTTON_H = 80;

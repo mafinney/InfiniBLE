@@ -43,16 +43,15 @@ namespace Pinetime::Controllers {
         return bleController.IsConnected();
     }
 
-    void ESPService::read(int8_t buf[PACKETLEN]) {
-        hasValue = false;
-        for (int i = 0; i < PACKETLEN; i++) {
+    void ESPService::read(int8_t *buf, uint8_t len) {
+        for (int i = 0; i < len; i++) {
             buf[i] = readBuf[i];
         }
     }
 
-    void ESPService::write(int8_t *message, int8_t len) {
+    void ESPService::write(int8_t *buf, uint8_t len) {
         // This write notifies the client of a write
-        auto *om = ble_hs_mbuf_from_flat(message, len);
+        auto *om = ble_hs_mbuf_from_flat(buf, len);
 
         uint16_t connectionHandle = nimble.connHandle();
         if (connectionHandle == 0 || connectionHandle == BLE_HS_CONN_HANDLE_NONE) {
@@ -79,11 +78,12 @@ namespace Pinetime::Controllers {
     // }
 
     int ESPService::HandleClientWrite(struct ble_gatt_access_ctxt *ctxt) {
-        int res = ble_hs_mbuf_to_flat(ctxt->om, readBuf, PACKETLEN, NULL);
-        for (int i = 0; i < PACKETLEN; i++) {
-            lastValueRead[i] = readBuf[i];
+        auto packetLen = OS_MBUF_PKTLEN(ctxt->om);
+        if (packetLen > MAX_PACKET_LEN) {
+            packetLen = MAX_PACKET_LEN;
         }
-        hasValue = true;
+
+        int res = ble_hs_mbuf_to_flat(ctxt->om, readBuf, packetLen, NULL);
         return res;
     }
 }

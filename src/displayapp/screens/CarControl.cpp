@@ -103,7 +103,7 @@ CarControl::~CarControl() {
 }
 
 int8_t CarControl::GetDoorStatus() {
-	esp.read(buf);
+	esp.read(buf, 2);
 	// if (buf[0] != LOCKED || buf[0] != UNLOCKED) {
 	// 	return UNKNOWN;
 	// }
@@ -111,7 +111,7 @@ int8_t CarControl::GetDoorStatus() {
 }
 
 int8_t CarControl::GetWindowStatus() {
-	esp.read(buf);
+	esp.read(buf, 2);
 	// if (buf[1] != LOCKED || buf[1] != UNLOCKED) {
 	// 	return UNKNOWN;
 	// }
