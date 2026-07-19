@@ -6,9 +6,14 @@
 #include "displayapp/Controllers.h"
 #include "Symbols.h"
 
+#include <tinycrypt/sha256.h>
+
 #define UNKNOWN -1
 #define LOCKED 0 // Up, for windows
 #define UNLOCKED 1 // Down, for windows
+
+#define CHECK_HASH 9
+#define CHECK_HASH_RESP 10
 
 enum Command {
 	LOCKDOORS,
@@ -33,6 +38,7 @@ namespace Pinetime::Applications {
 			private:
 				Controllers::ESPService& esp;
 				int8_t buf[MAX_PACKET_LEN];
+				uint8_t key[16] = {0x22, 0x38, 0x9d, 0x03, 0xbf, 0x8c, 0xb7, 0x3d, 0x02, 0xc9, 0xfd, 0xf7, 0x67, 0xab, 0x69, 0x8b};
 
 				static constexpr uint8_t MEDIUM_BUTTON_W = 115;
             	static constexpr uint8_t MEDIUM_BUTTON_H = 80;
@@ -69,6 +75,8 @@ namespace Pinetime::Applications {
 				 * Returns either LOCKED, UNLOCKED, or UNKNOWN
 				 */
 				int8_t GetWindowStatus();
+
+				void check_hash();
 
 				/**
             	 * CreateButton is a wrapper function for all the calls needed to create a button struct object

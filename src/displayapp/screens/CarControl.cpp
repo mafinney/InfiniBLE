@@ -31,6 +31,11 @@ void CarControl::OnButtonEvent(lv_obj_t *obj, lv_event_t event) {
 }
 
 void CarControl::Refresh() {
+	esp.read(buf, 17);
+	if (buf[0] == CHECK_HASH) {
+		check_hash();
+	}
+
 	// Figure out if we are still connected
 	status[0] = esp.isConnected();
 
@@ -116,6 +121,30 @@ int8_t CarControl::GetWindowStatus() {
 	// 	return UNKNOWN;
 	// }
 	return buf[1];
+}
+
+void CarControl::check_hash() {
+	uint8_t nonce[16];
+	for (int i = 0; i < 16; i++) {
+		nonce[i] = buf[i + 1];
+	}
+	uint8_t input[32];
+	memcpy(input, key, 16);
+	memcpy(input + 16, nonce, 16);
+	uint8_t hash[32];
+
+	struct tc_sha256_state_struct sha_ctx;
+	tc_sha256_init(&sha_ctx);
+	tc_sha256_update(&sha_ctx, input, sizeof(input));
+	tc_sha256_final(hash, &sha_ctx);
+
+	uint8_t output[33];
+	output[0] = CHECK_HASH_RESP;
+	for (int i = 0; i < 32; i++) {
+		output[i + 1] = hash[i];
+	}
+
+	esp.write((int8_t *) output, 33);
 }
 
 void CarControl::CreateButton(button *b, lv_obj_t *par, lv_event_cb_t event_cb, uint8_t w, uint8_t h, lv_align_t align, lv_coord_t x_ofs, lv_coord_t y_ofs, char *text) {

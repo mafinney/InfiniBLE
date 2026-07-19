@@ -92,6 +92,7 @@ set(TINYCRYPT_SRC
         libs/mynewt-nimble/ext/tinycrypt/src/cmac_mode.c
         libs/mynewt-nimble/ext/tinycrypt/src/ecc.c
         libs/mynewt-nimble/ext/tinycrypt/src/ecc_dh.c
+        libs/mynewt-nimble/ext/tinycrypt/src/sha256.c
         )
 
 set(NIMBLE_SRC
