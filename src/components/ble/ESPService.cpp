@@ -43,13 +43,13 @@ namespace Pinetime::Controllers {
         return bleController.IsConnected();
     }
 
-    void ESPService::read(int8_t *buf, uint8_t len) {
+    void ESPService::read(uint8_t *buf, uint8_t len) {
         for (int i = 0; i < len; i++) {
             buf[i] = readBuf[i];
         }
     }
 
-    void ESPService::write(int8_t *buf, uint8_t len) {
+    void ESPService::write(uint8_t *buf, uint8_t len) {
         // This write notifies the client of a write
         auto *om = ble_hs_mbuf_from_flat(buf, len);
 

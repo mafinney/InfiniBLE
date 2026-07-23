@@ -8,18 +8,13 @@
 
 #include <tinycrypt/sha256.h>
 
-#define UNKNOWN -1
-#define LOCKED 0 // Up, for windows
-#define UNLOCKED 1 // Down, for windows
-
-#define CHECK_HASH 9
-#define CHECK_HASH_RESP 10
-
-enum Command {
-	LOCKDOORS,
-	UNLOCKDOORS,
-	ROLLUPWINDOWS,
-	ROLLDOWNWINDOWS
+enum PacketType {
+	READY_TO_AUTH,
+	CHECK_AUTH,
+	CHECK_AUTH_RESP,
+	AUTH_OK,
+	AUTH_FAILED,
+	UPDATE
 };
 
 namespace Pinetime::Controllers {
@@ -37,7 +32,7 @@ namespace Pinetime::Applications {
 
 			private:
 				Controllers::ESPService& esp;
-				int8_t buf[MAX_PACKET_LEN];
+				uint8_t buf[MAX_PACKET_LEN]; // used to store raw read data from ESPService
 				uint8_t key[16] = {0x22, 0x38, 0x9d, 0x03, 0xbf, 0x8c, 0xb7, 0x3d, 0x02, 0xc9, 0xfd, 0xf7, 0x67, 0xab, 0x69, 0x8b};
 
 				static constexpr uint8_t MEDIUM_BUTTON_W = 115;
@@ -45,8 +40,8 @@ namespace Pinetime::Applications {
             	static constexpr uint8_t SMALL_BUTTON_W = 80;
             	static constexpr uint8_t SMALL_BUTTON_H = 50;
 
-				// [0] is connected, [1] is doors, [2] is windows, [3] is auto. Uses defines above
-				int8_t status[3];
+				// [0] is auto, [1] is doors, [2] is windows
+				bool status[3]; // stores the last read status from the car
 
 				// Each button is made of a label and a button
 				struct button {
@@ -65,18 +60,17 @@ namespace Pinetime::Applications {
 				lv_task_t *refresh_task;
 
 				/**
-				 * GetDoorStatus requests the door status from the car
-				 * Returns either LOCKED, UNLOCKED, or UNKNOWN
+				 * SendPacket is given a packet type and any values that go with it and sends that packet to the car
 				 */
-				int8_t GetDoorStatus();
+				void SendPacket(PacketType packetType, uint8_t *arg);
 
 				/**
-				 * GetWindowStatus requests the window status from the car
-				 * Returns either LOCKED, UNLOCKED, or UNKNOWN
+				 * ComputeHash computes the hash using the shared key and the given random value
+				 * Takes a key
+				 * Takes an nonce value
+				 * Takes an array to write the computed hash too
 				 */
-				int8_t GetWindowStatus();
-
-				void check_hash();
+				void ComputeHash(uint8_t key[16], uint8_t nonce[16], uint8_t output[33]);
 
 				/**
             	 * CreateButton is a wrapper function for all the calls needed to create a button struct object
