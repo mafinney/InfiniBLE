@@ -5,7 +5,7 @@
 #undef max
 #undef min
 
-#define MAX_PACKET_LEN 4096
+#define MAX_PACKET_LEN 255
 
 namespace Pinetime::System {
     class SystemTask;
@@ -31,10 +31,11 @@ namespace Pinetime::Controllers {
             Pinetime::Controllers::Ble& bleController;
             Pinetime::Controllers::NimbleController& nimble;
 
-            // int HandleClientRead(struct ble_gatt_access_ctxt *ctxt);
+            int HandleClientRead(struct ble_gatt_access_ctxt *ctxt);
             int HandleClientWrite(struct ble_gatt_access_ctxt *ctxt);
 
             uint8_t writeBuf[MAX_PACKET_LEN];
+            uint8_t writeLen;
             uint8_t readBuf[MAX_PACKET_LEN];
 
             static constexpr uint16_t espServiceId {0x181D};

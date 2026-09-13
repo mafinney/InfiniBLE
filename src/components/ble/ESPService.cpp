@@ -44,13 +44,17 @@ namespace Pinetime::Controllers {
     }
 
     void ESPService::read(uint8_t *buf, uint8_t len) {
+        // User level apps can call this to read what was last written to this characteristic by the client
         for (int i = 0; i < len; i++) {
             buf[i] = readBuf[i];
         }
     }
 
-    void ESPService::write(uint8_t *buf, uint8_t len) {
-        // This write notifies the client of a write
+    void ESPService::write(uint8_t *buf, uint8_t len) {        
+        // This write notifies the client of a write. It also caches whatever was written last in the service (for HandleClientRead)
+        memcpy(writeBuf, buf, len);
+        writeLen = len;
+
         auto *om = ble_hs_mbuf_from_flat(buf, len);
 
         uint16_t connectionHandle = nimble.connHandle();
@@ -63,25 +67,25 @@ namespace Pinetime::Controllers {
 
     int ESPService::ESPServiceCallback(struct ble_gatt_access_ctxt *ctxt) {
         switch (ctxt->op) {
-            // case BLE_GATT_ACCESS_OP_READ_CHR:
-            //     return HandleClientRead(ctxt);
+            case BLE_GATT_ACCESS_OP_READ_CHR:
+                return HandleClientRead(ctxt);
             case BLE_GATT_ACCESS_OP_WRITE_CHR:
                 return HandleClientWrite(ctxt);
+            default:
+                return BLE_ATT_ERR_UNLIKELY;
         }
-        return -1; // Other operation, shouldn't happen
     }
 
-    // int ESPService::HandleClientRead(struct ble_gatt_access_ctxt *ctxt) {
-    //     // This currently isn't (assumption) being used, as this only triggers on a read request
-    //     int res = os_mbuf_append(ctxt->om, &writeBuf, PACKETLEN);
-    //     return res;
-    // }
+    int ESPService::HandleClientRead(struct ble_gatt_access_ctxt *ctxt) {
+        // When the client requests to read, we rewrite the last thing written by the user level app
+        int res = os_mbuf_append(ctxt->om, writeBuf, writeLen);
+        return res;
+    }
 
     int ESPService::HandleClientWrite(struct ble_gatt_access_ctxt *ctxt) {
-        auto packetLen = OS_MBUF_PKTLEN(ctxt->om);
-        if (packetLen > MAX_PACKET_LEN) {
-            packetLen = MAX_PACKET_LEN;
-        }
+        // When the client writes we read the message immediatly into readBuf. The user level app can then call read() when they are ready to read
+        int packetLen = OS_MBUF_PKTLEN(ctxt->om);
+        packetLen = std::min(packetLen, MAX_PACKET_LEN);
 
         int res = ble_hs_mbuf_to_flat(ctxt->om, readBuf, packetLen, NULL);
         return res;

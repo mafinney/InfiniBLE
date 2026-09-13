@@ -7,6 +7,7 @@
 #include "Symbols.h"
 
 #include <tinycrypt/sha256.h>
+#include <nrf_log.h>
 
 enum Command {
 	LOCKDOORS,
@@ -41,7 +42,8 @@ namespace Pinetime::Applications {
 			private:
 				Controllers::ESPService& esp;
 				uint8_t buf[MAX_PACKET_LEN];
-				const uint8_t key[16] = {0x22, 0x38, 0x9d, 0x03, 0xbf, 0x8c, 0xb7, 0x3d, 0x02, 0xc9, 0xfd, 0xf7, 0x67, 0xab, 0x69, 0x8b};
+				uint8_t key[16] = {0x22, 0x38, 0x9d, 0x03, 0xbf, 0x8c, 0xb7, 0x3d, 0x02, 0xc9, 0xfd, 0xf7, 0x67, 0xab, 0x69, 0x8b};
+				bool hash_sent;
 
 				static constexpr uint8_t MEDIUM_BUTTON_W = 115;
             	static constexpr uint8_t MEDIUM_BUTTON_H = 80;
@@ -68,20 +70,20 @@ namespace Pinetime::Applications {
 				lv_task_t *refresh_task;
 
 				/**
-				 * CheckHash computes the hash of a given nonce and key
-				 * Takes a key
-				 * A nonce
-				 * An address to store the computed hash
-				 */
-				void CheckHash(const uint8_t key[16], const uint8_t nonce[16], uint8_t hash[32]);
-
-				/**
 				 * WritePacket creates and then writes a packet to the car. The data array is assumed to be the 
 				 * correct length for the specified packet type
 				 * Takes a packet type
 				 * An array of data to send
 				 */
 				void WritePacket(PacketType packetType, uint8_t *data);
+
+				/**
+				 * ComputeHash computes the hash of a given nonce and key
+				 * Takes a key
+				 * A nonce
+				 * An address to store the computed hash
+				 */
+				void ComputeHash(uint8_t key[16], uint8_t nonce[16], uint8_t hash[32]);
 
 				/**
             	 * CreateButton is a wrapper function for all the calls needed to create a button struct object

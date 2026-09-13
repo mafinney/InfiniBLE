@@ -21,19 +21,30 @@ void CarControl::OnButtonEvent(lv_obj_t *obj, lv_event_t event) {
 }
 
 void CarControl::Refresh() {
-	esp.read(buf, 17);
-	if (buf[0] == PacketType::CHECK_AUTH) {
-		uint8_t hash[32];
+	esp.read(buf, (uint8_t) MAX_PACKET_LEN); // safe cast, MAX_PACKET_LEN fits in a byte
+	if (buf[0] == CHECK_AUTH && hash_sent == false) {
+		// copy nonce to a local variable
 		uint8_t nonce[16];
 		memcpy(nonce, buf + 1, 16);
 
-		CheckHash(key, nonce, hash);
+		// compute hash
+		uint8_t hash[32];
+		ComputeHash(key, nonce, hash);
+
+		// send a CHECK_AUTH_RESP with the computed hash to the client
 		WritePacket(CHECK_AUTH_RESP, hash);
+		hash_sent = true;
+	}
+
+	if (esp.isConnected()) {
+		lv_obj_set_style_local_text_color(connected, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_GREEN);
+	} else {
+		lv_obj_set_style_local_text_color(connected, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
 	}
 }
 
 CarControl::CarControl(Pinetime::Controllers::ESPService& espService) : esp {espService} {
-	CreateLabel(&car_name, car_screen, SMALL_BUTTON_W, SMALL_BUTTON_H, LV_ALIGN_IN_TOP_MID, 0, 0, (char *) "WRX");
+	CreateLabel(&car_name, car_screen, SMALL_BUTTON_W, SMALL_BUTTON_H, LV_ALIGN_IN_TOP_MID, 0, 0, (char *) "WRX3");
 	CreateLabel(&connected, car_screen, SMALL_BUTTON_W, SMALL_BUTTON_H, LV_ALIGN_IN_TOP_RIGHT, 0, 0, (char *) Symbols::bluetooth);
 	CreateButton(&doors, car_screen, ButtonEvent, SMALL_BUTTON_W, SMALL_BUTTON_H, LV_ALIGN_IN_LEFT_MID, 0, 0, (char *) "DOORS");
 	CreateButton(&windows, car_screen, ButtonEvent, SMALL_BUTTON_W, SMALL_BUTTON_H, LV_ALIGN_IN_RIGHT_MID, 0, 0, (char *) "WINDOWS");
@@ -47,6 +58,7 @@ CarControl::CarControl(Pinetime::Controllers::ESPService& espService) : esp {esp
 	lv_scr_load(car_screen);
 
 	WritePacket(READY_TO_AUTH, NULL);
+	hash_sent = false;
 }
 
 CarControl::~CarControl() {
@@ -69,7 +81,7 @@ void CarControl::WritePacket(PacketType packetType, uint8_t *data) {
 			return ;
 		case PacketType::CHECK_AUTH_RESP:
 			// send the generated hash (32 bytes)
-			memcpy(packet + 1, data, 32);
+			memcpy(packet + packetLen, data, 32); // copy the hash to the end of the packet
 			packetLen += 32;
 			break;
 		case PacketType::AUTH_OK:
@@ -80,8 +92,6 @@ void CarControl::WritePacket(PacketType packetType, uint8_t *data) {
 			break;
 		case PacketType::COMMAND:
 			// send the single byte command
-			packet[1] = data[0];
-			packetLen += 1;
 			break;
 		case PacketType::UPDATE:
 			// the watch shouldn't send this
@@ -90,7 +100,7 @@ void CarControl::WritePacket(PacketType packetType, uint8_t *data) {
 	esp.write(packet, packetLen);
 }
 
-void CarControl::CheckHash(const uint8_t key[16], const uint8_t nonce[16], uint8_t hash[32]) {
+void CarControl::ComputeHash(uint8_t key[16], uint8_t nonce[16], uint8_t hash[32]) {
 	uint8_t input[32];
 	memcpy(input, key, 16);
 	memcpy(input + 16, nonce, 16);
